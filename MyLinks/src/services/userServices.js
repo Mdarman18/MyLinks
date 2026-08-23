@@ -20,7 +20,16 @@ export const addData = async (from) => {
 export const deleteData = async (itemId) => {
   try {
     const res = await userUrl.delete(`/delete/${itemId}`);
-    console.log(res);
+
+    return res.data.user;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const handleisPinned = async (itemId) => {
+  try {
+    const res = await userUrl.post(`/isPinned/${itemId}`);
 
     return res.data.user;
   } catch (error) {

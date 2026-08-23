@@ -13,7 +13,12 @@ import {
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteUser, setUser } from "./store/slice";
-import { addData, deleteData, loadContent } from "./services/userServices";
+import {
+  addData,
+  deleteData,
+  handleisPinned,
+  loadContent,
+} from "./services/userServices";
 import { persistor } from "./store/store";
 
 const CATEGORIES = [
@@ -121,7 +126,8 @@ export default function App() {
   }
 
   // Real-time Pin/Unpin handler
-  function handleTogglePin(itemId) {
+  async function handleTogglePin(itemId) {
+    await handleisPinned(itemId);
     const updatedList = itemsList.map((item) => {
       const currentId = item?.id || item?._id;
       if (currentId === itemId) {
@@ -129,6 +135,7 @@ export default function App() {
       }
       return item;
     });
+
     dispatch(setUser(updatedList));
   }
   async function addLink(e) {
