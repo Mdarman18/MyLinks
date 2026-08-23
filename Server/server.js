@@ -9,8 +9,13 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // ======------ connect to db ------=========
+// https://my-links-teal.vercel.app
 connectDb();
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://my-links-teal.vercel.app"],
+  }),
+);
 // ====------Central middleware --===========
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
