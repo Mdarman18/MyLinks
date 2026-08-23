@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import connectDb from "./src/connections/connect.js";
 import { route } from "./src/route/route.js";
+import cors from "cors";
 dotenv.config();
 const app = express();
 
@@ -17,7 +18,8 @@ app.use((err, req, res, next) => {
     message: err.message || "Internal Server Error",
   });
 });
-
+// =======------    Slove cros issue -----------====================
+app.use(cors({ origin: "http://localhost:5173" }));
 // ======----- Main Route ----===========
 app.use("/api/user", route);
 app.get("/", (req, res) => {

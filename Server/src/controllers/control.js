@@ -4,7 +4,7 @@ import customError from "../utlis/error.js";
 // ======---------handle add detalis ----==========
 export const handleAdd = async (req, res, next) => {
   try {
-    const { title, url, description } = req.body;
+    const { title, url, description, category } = req.body;
     if (!title) {
       throw new customError("please enter the title", 400);
     }
@@ -12,6 +12,7 @@ export const handleAdd = async (req, res, next) => {
       title: title,
       url: url,
       description: description,
+      category: category,
     });
     res.status(201).json({
       success: true,

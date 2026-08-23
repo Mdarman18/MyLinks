@@ -17,6 +17,11 @@ const appSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  category: {
+    type: String,
+    enum: ["dev", "salesforce", "learning", "design", "social", "other"],
+    default: "other",
+  },
 });
 
 export const userDetails = mongoose.model("User", appSchema);
