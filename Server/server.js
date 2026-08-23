@@ -10,6 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // ======------ connect to db ------=========
 connectDb();
+app.use(cors({ origin: "http://localhost:5173" }));
 // ====------Central middleware --===========
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
@@ -19,7 +20,7 @@ app.use((err, req, res, next) => {
   });
 });
 // =======------    Slove cros issue -----------====================
-app.use(cors({ origin: "http://localhost:5173" }));
+
 // ======----- Main Route ----===========
 app.use("/api/user", route);
 app.get("/", (req, res) => {
