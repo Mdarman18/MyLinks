@@ -24,9 +24,18 @@ const userSlice = createSlice({
     deleteUser: (state, action) => {
       state.user = state.user.filter((ele) => ele._id !== action.payload);
     },
+    togglePin: (state, action) => {
+      const item = state.user.find(
+        (item) => (item.id || item._id) === action.payload,
+      );
+
+      if (item) {
+        item.isPinned = !item.isPinned;
+      }
+    },
   },
 });
 
-export const { setUser, clearUser, deleteUser } = userSlice.actions;
+export const { setUser, clearUser, deleteUser ,togglePin} = userSlice.actions;
 
 export default userSlice.reducer;

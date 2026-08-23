@@ -12,7 +12,7 @@ import {
   Pin,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteUser, setUser } from "./store/slice";
+import { deleteUser, setUser, togglePin } from "./store/slice";
 import {
   addData,
   deleteData,
@@ -128,15 +128,7 @@ export default function App() {
   // Real-time Pin/Unpin handler
   async function handleTogglePin(itemId) {
     await handleisPinned(itemId);
-    const updatedList = itemsList.map((item) => {
-      const currentId = item?.id || item?._id;
-      if (currentId === itemId) {
-        return { ...item, isPinned: !item.isPinned };
-      }
-      return item;
-    });
-
-    dispatch(setUser(updatedList));
+    dispatch(togglePin(itemId));
   }
   async function addLink(e) {
     e.preventDefault();
@@ -159,7 +151,6 @@ export default function App() {
 
   const itemsList = Array.isArray(userState) ? userState : [];
 
-  // Optional: Pin kiye hue items ko upar dikhane ke liye sort kar sakte hain
   const sortedItems = [...itemsList].sort((a, b) => {
     if (a?.isPinned === b?.isPinned) return 0;
     return a?.isPinned ? -1 : 1;
@@ -176,14 +167,9 @@ export default function App() {
     return matchesCat && matchesQuery;
   });
   const handleDelete = async (itemId) => {
-    const previousItems = [...itemsList];
-    const optimisticList = itemsList.filter((item) => {
-      const currentId = item?.id || item?._id;
-      return currentId !== itemId;
-    });
-    dispatch(setUser(optimisticList));
     try {
       await deleteData(itemId);
+      dispatch(deleteUser(itemId));
     } catch (err) {
       console.log("Delete error:", err);
       dispatch(setUser(previousItems));
