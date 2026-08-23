@@ -184,7 +184,7 @@ export default function App() {
     }
   };
   return (
-    <div className="min-h-screen w-full bg-linear-to-r from-[#94ea9c] to-[#6eddb1] text-[#173c2e] flex flex-col justify-between p-3 xs:p-4 sm:p-8 relative overflow-x-hidden">
+    <div className="min-h-screen w-full bg-linear-to-r from-[#e4f5e6] to-[#6eddb1] text-[#173c2e] flex flex-col justify-between p-3 xs:p-4 sm:p-8 relative overflow-x-hidden">
       <div className="w-full max-w-2xl mx-auto relative z-10 flex-1">
         {/* Header Title Section & Add Button */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
