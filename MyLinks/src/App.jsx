@@ -197,13 +197,14 @@ export default function App() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono bg-white/60 backdrop-blur-md px-3 py-2 rounded-xl border border-[#b8ebce] shadow-xs hidden sm:inline-block">
+          <div className="flex items-center justify-between sm:justify-end gap-2">
+            {/* Time badge updated: removed 'hidden sm:inline-block' so it shows on mobile too */}
+            <span className="text-[11px] xs:text-xs font-mono bg-white/60 backdrop-blur-md px-2.5 py-2 rounded-xl border border-[#b8ebce] shadow-xs inline-block">
               {timeStr}
             </span>
             <button
               onClick={() => setShowForm((s) => !s)}
-              className="flex bg-[#238b63] hover:bg-[#145c43] items-center text-white gap-1.5 active:scale-95 shadow-lg transition-all duration-200 text-sm font-medium px-4 py-2 rounded-xl cursor-pointer w-full sm:w-auto justify-center"
+              className="flex bg-[#238b63] hover:bg-[#145c43] items-center text-white gap-1.5 active:scale-95 shadow-lg transition-all duration-200 text-sm font-medium px-4 py-2 rounded-xl cursor-pointer"
             >
               {showForm ? <X size={16} /> : <Plus size={16} />}
               {showForm ? "Cancel" : "Add New"}
@@ -434,7 +435,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Right Side: Action Buttons (Hover par show honge) */}
+                  {/* Right Side: Action Buttons */}
                   <div className="flex items-center justify-end sm:justify-start gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#b8ebce]/50 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     {/* Pin / Unpin Button */}
                     <button
@@ -454,9 +455,7 @@ export default function App() {
 
                     {/* Edit Button */}
                     <button
-                      onClick={() => {
-                        // Edit logic ya modal open karne ke liye yahan likh sakte hain
-                      }}
+                      onClick={() => {}}
                       className="p-2 rounded-xl bg-white text-[#5d786b] border border-[#b8ebce] hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all cursor-pointer shadow-sm"
                       title="Edit item"
                     >
