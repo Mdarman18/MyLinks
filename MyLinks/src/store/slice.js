@@ -33,9 +33,19 @@ const userSlice = createSlice({
         item.isPinned = !item.isPinned;
       }
     },
+    updateItem: (state, action) => {
+      const updatedItem = action.payload;
+      const targetId = updatedItem._id || updatedItem.id;
+
+      state.user = state.user.map((ele) => {
+        const currentId = ele._id || ele.id;
+        return currentId === targetId ? updatedItem : ele;
+      });
+    },
   },
 });
 
-export const { setUser, clearUser, deleteUser ,togglePin} = userSlice.actions;
+export const { setUser, clearUser, deleteUser, togglePin, updateItem } =
+  userSlice.actions;
 
 export default userSlice.reducer;

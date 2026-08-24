@@ -1,25 +1,18 @@
 import { useState, useEffect } from "react";
-import {
-  Plus,
-  Trash2,
-  Search,
-  X,
-  Copy,
-  Check,
-  Sparkles,
-  Heart,
-  FileText,
-  Pin,
-} from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteUser, setUser, togglePin } from "./store/slice";
+import { deleteUser, setUser, togglePin, updateItem } from "./store/slice";
 import {
   addData,
   deleteData,
   handleisPinned,
+  handleUpdate,
   loadContent,
 } from "./services/userServices";
-import { persistor } from "./store/store";
+import AddLinkForm from "./component/AddLink";
+import CategoryFilters from "./component/CategoryFilter";
+import LinkCard from "./component/Linkcard";
+import Header from "./component/Header";
 
 const CATEGORIES = [
   {
@@ -77,6 +70,10 @@ export default function App() {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
   const [form, setForm] = useState({
     title: "",
     url: "",
@@ -125,11 +122,31 @@ export default function App() {
     setTimeout(() => setCopiedId(null), 2000);
   }
 
-  // Real-time Pin/Unpin handler
   async function handleTogglePin(itemId) {
     await handleisPinned(itemId);
     dispatch(togglePin(itemId));
   }
+
+  const handleEditClick = (ele) => {
+    const itemId = ele?.id || ele?._id;
+    setForm({
+      title: ele.title || "",
+      url: ele.url || "",
+      description: ele.description || "",
+      category: ele.category || "dev",
+    });
+    setIsEditing(true);
+    setEditingId(itemId);
+    setShowForm(true);
+  };
+
+  const handleAddNewClick = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    setForm({ title: "", url: "", description: "", category: "dev" });
+    setShowForm(true);
+  };
+
   async function addLink(e) {
     e.preventDefault();
     if (!form.title.trim()) {
@@ -138,9 +155,18 @@ export default function App() {
     }
 
     try {
-      const newItem = await addData(form);
-      dispatch(setUser(newItem));
+      if (isEditing) {
+        const updatedItem = await handleUpdate(editingId, form);
+        dispatch(updateItem(updatedItem));
+      } else {
+        await addData(form);
+        // Naya item add hone ke baad poori list wapas load kar lo taaki createdAt/updatedAt database se sahi mile
+        await loadData();
+      }
+
       setShowForm(false);
+      setIsEditing(false);
+      setEditingId(null);
       setForm({ title: "", url: "", description: "", category: "dev" });
       setError("");
     } catch (err) {
@@ -166,117 +192,38 @@ export default function App() {
         l?.description.toLowerCase().includes(query.toLowerCase()));
     return matchesCat && matchesQuery;
   });
+
   const handleDelete = async (itemId) => {
     try {
       await deleteData(itemId);
       dispatch(deleteUser(itemId));
     } catch (err) {
       console.log("Delete error:", err);
-      dispatch(setUser(previousItems));
       alert("Failed to delete item. Please try again.");
     }
   };
+
   return (
     <div className="min-h-screen w-full bg-linear-to-r from-[#e4f5e6] to-[#6eddb1] text-[#173c2e] flex flex-col justify-between p-3 xs:p-4 sm:p-8 relative overflow-x-hidden">
       <div className="w-full max-w-2xl mx-auto relative z-10 flex-1">
-        {/* Header Title Section & Add Button */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#173c2e]">
-              Link Vault
-            </h1>
-            <p className="text-xs sm:text-sm text-[#173c2e]/80">
-              Your personal hub for links & notes.
-            </p>
-          </div>
+        <Header
+          timeStr={timeStr}
+          showForm={showForm}
+          setShowForm={handleAddNewClick}
+        />
 
-          <div className="flex items-center justify-between sm:justify-end gap-2">
-            {/* Time badge updated: removed 'hidden sm:inline-block' so it shows on mobile too */}
-            <span className="text-[11px] xs:text-xs font-mono bg-white/60 backdrop-blur-md px-2.5 py-2 rounded-xl border border-[#b8ebce] shadow-xs inline-block">
-              {timeStr}
-            </span>
-            <button
-              onClick={() => setShowForm((s) => !s)}
-              className="flex bg-[#238b63] hover:bg-[#145c43] items-center text-white gap-1.5 active:scale-95 shadow-lg transition-all duration-200 text-sm font-medium px-4 py-2 rounded-xl cursor-pointer"
-            >
-              {showForm ? <X size={16} /> : <Plus size={16} />}
-              {showForm ? "Cancel" : "Add New"}
-            </button>
-          </div>
-        </div>
-
-        {/* Add Link Form Modal / Dropdown */}
         {showForm && (
-          <div className="mb-6 bg-white/95 backdrop-blur-2xl border border-[#b8ebce] shadow-xl rounded-2xl p-4 sm:p-5 animate-in fade-in duration-200">
-            <h3 className="text-sm font-semibold text-[#145c43] mb-3 flex items-center gap-2">
-              <Plus size={14} className="text-[#238b63]" />
-              Add New Link or Note
-            </h3>
-
-            <form onSubmit={addLink} className="grid gap-3">
-              <input
-                type="text"
-                placeholder="Title (e.g., GitHub Repo)"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="bg-[#f8fdf9] border border-[#b8ebce] focus:border-[#6eddb1] focus:ring-2 focus:ring-[#6eddb1]/20 outline-none rounded-xl px-3.5 py-2.5 text-sm text-[#173c2e] placeholder:text-[#8ba99a]"
-              />
-
-              <input
-                type="text"
-                placeholder="URL (As-is user entered)"
-                value={form.url}
-                onChange={(e) => setForm({ ...form, url: e.target.value })}
-                className="bg-[#f8fdf9] border border-[#b8ebce] focus:border-[#6eddb1] focus:ring-2 focus:ring-[#6eddb1]/20 outline-none rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#173c2e] placeholder:text-[#8ba99a]"
-              />
-
-              <textarea
-                placeholder="Description / Note (Optional)"
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-                rows={2}
-                className="bg-[#f8fdf9] border border-[#b8ebce] focus:border-[#6eddb1] focus:ring-2 focus:ring-[#6eddb1]/20 outline-none rounded-xl px-3.5 py-2.5 text-sm text-[#173c2e] placeholder:text-[#8ba99a] resize-none"
-              />
-
-              {/* Categories Selection for Form */}
-              <div className="flex flex-wrap gap-2 pt-1">
-                {CATEGORIES.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setForm({ ...form, category: c.id })}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
-                      form.category === c.id
-                        ? `${c.bg} ${c.text} ${c.border} shadow-sm scale-105`
-                        : "border-[#b8ebce] bg-[#f2fcf5] text-[#5d786b] hover:text-[#145c43]"
-                    }`}
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: c.dot }}
-                    />
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-
-              {error && (
-                <p className="text-xs text-rose-500 font-medium">{error}</p>
-              )}
-
-              <button
-                type="submit"
-                className="mt-2 bg-[#238b63] hover:bg-[#145c43] active:scale-[0.98] transition-all text-white text-sm font-medium py-2.5 rounded-xl shadow-md cursor-pointer"
-              >
-                Save to Vault
-              </button>
-            </form>
-          </div>
+          <AddLinkForm
+            form={form}
+            setForm={setForm}
+            addLink={addLink}
+            error={error}
+            categories={CATEGORIES}
+            setShowForm={setShowForm}
+            isEditing={isEditing}
+          />
         )}
 
-        {/* Search Bar Section */}
         <div className="mt-4 relative z-10">
           <Search
             size={16}
@@ -299,42 +246,13 @@ export default function App() {
           )}
         </div>
 
-        {/* Categories Filter Tabs */}
-        <div className="mt-3.5 flex flex-wrap gap-1.5 relative z-10">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
-              filter === "all"
-                ? "border-[#6eddb1] bg-white text-[#145c43] shadow-sm font-bold"
-                : "border-[#b8ebce] bg-white/50 text-[#5d786b] hover:text-[#145c43]"
-            }`}
-          >
-            All <span className="opacity-60 ml-1">({itemsList.length})</span>
-          </button>
+        <CategoryFilters
+          categories={CATEGORIES}
+          filter={filter}
+          setFilter={setFilter}
+          itemsList={itemsList}
+        />
 
-          {CATEGORIES.map((c) => {
-            const count = itemsList.filter((l) => l?.category === c.id).length;
-            return (
-              <button
-                key={c.id}
-                onClick={() => setFilter(c.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
-                  filter === c.id
-                    ? `${c.bg} ${c.text} ${c.border} shadow-sm font-bold`
-                    : "border-[#b8ebce] bg-white/50 text-[#5d786b] hover:text-[#145c43]"
-                }`}
-              >
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: c.dot }}
-                />
-                {c.label} <span className="opacity-60">({count})</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Loading Effect */}
         {!loaded && (
           <div className="py-16 text-center text-[#145c43] text-sm flex flex-col items-center gap-3 bg-white/50 backdrop-blur-md rounded-2xl border border-[#b8ebce] shadow-sm my-4">
             <div className="w-7 h-7 border-3 border-[#238b63] border-t-transparent rounded-full animate-spin" />
@@ -344,7 +262,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Empty State */}
         {loaded && filtered.length === 0 && (
           <div className="text-center py-16 px-4 border border-dashed border-[#b8ebce] rounded-2xl bg-white/30 backdrop-blur-md my-4">
             <p className="text-sm font-medium text-[#5d786b]">
@@ -355,118 +272,20 @@ export default function App() {
           </div>
         )}
 
-        {/* Main List Container */}
         <div className="mt-4 grid gap-3 relative z-10">
           {loaded &&
-            filtered.map((ele, idx) => {
-              const itemId = ele?.id || ele?._id || idx;
-              const isPinned = ele?.isPinned;
-
-              return (
-                <div
-                  key={itemId}
-                  className={`group relative overflow-hidden backdrop-blur-xl border p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                    isPinned
-                      ? "bg-[#e8f8ed] border-[#5bcdbf] shadow-md ring-1 ring-[#238b63]/30"
-                      : "bg-white/85 border-[#b8ebce] hover:border-[#6eddb1]"
-                  }`}
-                >
-                  {/* Left Side: Details */}
-                  <div className="flex items-start gap-3.5 overflow-hidden flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-[#dff8e7] text-[#238b63] flex items-center justify-center shrink-0 font-bold text-sm shadow-inner uppercase">
-                      {ele?.title ? ele.title.charAt(0) : "🔗"}
-                    </div>
-
-                    <div className="overflow-hidden space-y-1 w-full">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-sm font-semibold text-[#173c2e] truncate">
-                          {ele?.title}
-                        </h3>
-
-                        {ele?.category && (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#238b63]/10 text-[#238b63] border border-[#238b63]/25 capitalize">
-                            {ele.category}
-                          </span>
-                        )}
-
-                        {isPinned && (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20">
-                            Pinned
-                          </span>
-                        )}
-                      </div>
-
-                      {ele?.url && (
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={ele.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-[#238b63] hover:underline font-mono truncate block"
-                          >
-                            {ele.url}
-                          </a>
-                          <button
-                            onClick={(e) => copyToClipboard(e, itemId, ele.url)}
-                            className="text-[#5d786b] hover:text-[#145c43] p-1 rounded transition-colors"
-                            title="Copy URL"
-                          >
-                            {copiedId === itemId ? (
-                              <Check size={12} className="text-emerald-600" />
-                            ) : (
-                              <Copy size={12} />
-                            )}
-                          </button>
-                        </div>
-                      )}
-
-                      {ele?.description && (
-                        <p className="text-xs text-[#5d786b] truncate">
-                          {ele.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right Side: Action Buttons */}
-                  <div className="flex items-center justify-end sm:justify-start gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#b8ebce]/50 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    {/* Pin / Unpin Button */}
-                    <button
-                      onClick={() => handleTogglePin(itemId)}
-                      className={`p-2 rounded-xl transition-all cursor-pointer border ${
-                        isPinned
-                          ? "bg-[#238b63] text-white border-[#238b63] shadow-sm"
-                          : "bg-white text-[#5d786b] border-[#b8ebce] hover:bg-[#dff8e7] hover:text-[#145c43]"
-                      }`}
-                      title={isPinned ? "Unpin item" : "Pin item"}
-                    >
-                      <Pin
-                        size={14}
-                        className={isPinned ? "fill-current" : ""}
-                      />
-                    </button>
-
-                    {/* Edit Button */}
-                    <button
-                      onClick={() => {}}
-                      className="p-2 rounded-xl bg-white text-[#5d786b] border border-[#b8ebce] hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all cursor-pointer shadow-sm"
-                      title="Edit item"
-                    >
-                      <Sparkles size={14} />
-                    </button>
-
-                    {/* Delete Button */}
-                    <button
-                      onClick={() => handleDelete(itemId)}
-                      className="p-2 rounded-xl bg-white text-rose-400 border border-[#b8ebce] hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all cursor-pointer shadow-sm"
-                      title="Delete item"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+            filtered.map((ele, idx) => (
+              <LinkCard
+                key={ele?.id || ele?._id || idx}
+                ele={ele}
+                idx={idx}
+                handleTogglePin={handleTogglePin}
+                handleDelete={handleDelete}
+                copyToClipboard={copyToClipboard}
+                copiedId={copiedId}
+                handleEdit={() => handleEditClick(ele)}
+              />
+            ))}
         </div>
       </div>
     </div>

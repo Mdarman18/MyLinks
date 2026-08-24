@@ -36,3 +36,13 @@ export const handleisPinned = async (itemId) => {
     console.log(error);
   }
 };
+
+export const handleUpdate = async (itemId, from) => {
+  try {
+    const res = await userUrl.put(`/update/${itemId}`, from);
+    console.log(res.data);
+    return res.data.user;
+  } catch (error) {
+    console.log(error);
+  }
+};
