@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, Calendar, Home, Bookmark } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteUser, setUser, togglePin, updateItem } from "./store/slice";
 import {
@@ -70,6 +70,7 @@ export default function App() {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [activeTab, setActiveTab] = useState("home"); // "home" -> Pinned & Today | "all" -> Day-wise list
 
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -160,7 +161,6 @@ export default function App() {
         dispatch(updateItem(updatedItem));
       } else {
         await addData(form);
-        // Naya item add hone ke baad poori list wapas load kar lo taaki createdAt/updatedAt database se sahi mile
         await loadData();
       }
 
@@ -182,6 +182,10 @@ export default function App() {
     return a?.isPinned ? -1 : 1;
   });
 
+  // Today string format matching MongoDB date prefix (YYYY-MM-DD)
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  // Filter based on Search and Category
   const filtered = sortedItems.filter((l) => {
     const matchesCat = filter === "all" || l?.category === filter;
     const matchesQuery =
@@ -192,6 +196,28 @@ export default function App() {
         l?.description.toLowerCase().includes(query.toLowerCase()));
     return matchesCat && matchesQuery;
   });
+
+  // Home tab items: Pinned or Created Today
+  const homeFiltered = filtered.filter((l) => {
+    const itemDate = l?.createdAt
+      ? new Date(l.createdAt).toISOString().split("T")[0]
+      : "";
+    return l?.isPinned || itemDate === todayStr;
+  });
+
+  // All tab items grouped by date
+  const groupedByDate = filtered.reduce((acc, ele) => {
+    const dateKey = ele?.createdAt
+      ? new Date(ele.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "Recent Links";
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(ele);
+    return acc;
+  }, {});
 
   const handleDelete = async (itemId) => {
     try {
@@ -212,6 +238,32 @@ export default function App() {
           setShowForm={handleAddNewClick}
         />
 
+        {/* --- Navigation Tabs (Home vs All Day-wise) --- */}
+        <div className="flex bg-white/60 backdrop-blur-md p-1 rounded-xl border border-[#b8ebce] my-4 shadow-sm">
+          <button
+            onClick={() => setActiveTab("home")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer ${
+              activeTab === "home"
+                ? "bg-[#167F76] text-white shadow"
+                : "text-[#3E5F5A] hover:bg-[#dff8e7]"
+            }`}
+          >
+            <Home size={15} />
+            Pinned & Today
+          </button>
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all cursor-pointer ${
+              activeTab === "all"
+                ? "bg-[#167F76] text-white shadow"
+                : "text-[#3E5F5A] hover:bg-[#dff8e7]"
+            }`}
+          >
+            <Calendar size={15} />
+            All Data (Day-wise)
+          </button>
+        </div>
+
         {showForm && (
           <AddLinkForm
             form={form}
@@ -224,6 +276,7 @@ export default function App() {
           />
         )}
 
+        {/* Search Bar */}
         <div className="mt-4 relative z-10">
           <Search
             size={16}
@@ -262,31 +315,74 @@ export default function App() {
           </div>
         )}
 
-        {loaded && filtered.length === 0 && (
-          <div className="text-center py-16 px-4 border border-dashed border-[#b8ebce] rounded-2xl bg-white/30 backdrop-blur-md my-4">
-            <p className="text-sm font-medium text-[#5d786b]">
-              {itemsList.length === 0
-                ? "No links found in your vault yet."
-                : "No matching links found."}
-            </p>
+        {/* --- VIEW 1: HOME (Pinned & Today) --- */}
+        {loaded && activeTab === "home" && (
+          <div className="mt-4 grid gap-3 relative z-10">
+            {homeFiltered.length === 0 ? (
+              <div className="text-center py-16 px-4 border border-dashed border-[#b8ebce] rounded-2xl bg-white/30 backdrop-blur-md my-4">
+                <p className="text-sm font-medium text-[#5d786b]">
+                  {itemsList.length === 0
+                    ? "No links found in your vault yet."
+                    : "No pinned or today's links found."}
+                </p>
+              </div>
+            ) : (
+              homeFiltered.map((ele, idx) => (
+                <LinkCard
+                  key={ele?.id || ele?._id || idx}
+                  ele={ele}
+                  idx={idx}
+                  handleTogglePin={handleTogglePin}
+                  handleDelete={handleDelete}
+                  copyToClipboard={copyToClipboard}
+                  copiedId={copiedId}
+                  handleEdit={() => handleEditClick(ele)}
+                />
+              ))
+            )}
           </div>
         )}
 
-        <div className="mt-4 grid gap-3 relative z-10">
-          {loaded &&
-            filtered.map((ele, idx) => (
-              <LinkCard
-                key={ele?.id || ele?._id || idx}
-                ele={ele}
-                idx={idx}
-                handleTogglePin={handleTogglePin}
-                handleDelete={handleDelete}
-                copyToClipboard={copyToClipboard}
-                copiedId={copiedId}
-                handleEdit={() => handleEditClick(ele)}
-              />
-            ))}
-        </div>
+        {/* --- VIEW 2: ALL DATA (Day-wise grouped list) --- */}
+        {loaded && activeTab === "all" && (
+          <div className="mt-4 space-y-6 relative z-10">
+            {Object.keys(groupedByDate).length === 0 ? (
+              <div className="text-center py-16 px-4 border border-dashed border-[#b8ebce] rounded-2xl bg-white/30 backdrop-blur-md my-4">
+                <p className="text-sm font-medium text-[#5d786b]">
+                  No matching links found.
+                </p>
+              </div>
+            ) : (
+              Object.entries(groupedByDate).map(([date, dateItems]) => (
+                <div key={date} className="space-y-3">
+                  {/* Date Header Badge */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider px-3 py-1 bg-[#167F76]/15 text-[#075F59] rounded-md border border-[#167F76]/20">
+                      {date}
+                    </span>
+                    <div className="h-[1px] flex-1 bg-[#b8ebce]" />
+                  </div>
+
+                  {/* Cards for this particular date */}
+                  <div className="grid gap-3">
+                    {dateItems.map((ele, idx) => (
+                      <LinkCard
+                        key={ele?.id || ele?._id || idx}
+                        ele={ele}
+                        idx={idx}
+                        handleTogglePin={handleTogglePin}
+                        handleDelete={handleDelete}
+                        copyToClipboard={copyToClipboard}
+                        copiedId={copiedId}
+                        handleEdit={() => handleEditClick(ele)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -11,8 +11,19 @@ export default function LinkCard({
 }) {
   const itemId = ele?.id || ele?._id || idx;
   const isPinned = ele?.isPinned;
-  console.log("created at ", ele?.createdAt);
-
+  // Date aur Time ko achhe format mein convert karne ke liye helper function:
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-IN", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
   return (
     <div
       key={itemId}
@@ -78,14 +89,8 @@ export default function LinkCard({
           {/* Timestamps Section */}
           <div className="flex items-center gap-3 text-[10px] text-[#5d786b] pt-1 font-mono">
             {ele?.createdAt && (
-              <span>
-                Created:{" "}
-                {new Date(ele.createdAt).toLocaleString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+              <span className="text-[11px] text-[#5d786b] font-medium bg-[#e4f5e6] px-2 py-0.5 rounded-md border border-[#b8ebce]">
+                📅 {formatDate(ele.createdAt)}
               </span>
             )}
 
