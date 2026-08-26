@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 
 export default function AddLinkForm({
   form,
@@ -7,12 +7,14 @@ export default function AddLinkForm({
   error,
   categories,
   setShowForm,
+  isEditing,
+  loading = false, // <-- Loading prop accept kiya
 }) {
   return (
     <div className="mb-6 bg-white/95 backdrop-blur-2xl border border-[#b8ebce] shadow-xl rounded-2xl p-4 sm:p-5 animate-in fade-in duration-200">
       <h3 className="text-sm font-semibold text-[#145c43] mb-3 flex items-center gap-2">
         <Plus size={14} className="text-[#238b63]" />
-        Add New Link or Note
+        {isEditing ? "Edit Link or Note" : "Add New Link or Note"}
       </h3>
 
       <form onSubmit={addLink} className="grid gap-3">
@@ -21,7 +23,8 @@ export default function AddLinkForm({
           placeholder="Title (e.g., GitHub Repo)"
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
-          className="bg-[#f8fdf9] border border-[#b8ebce] focus:border-[#6eddb1] focus:ring-2 focus:ring-[#6eddb1]/20 outline-none rounded-xl px-3.5 py-2.5 text-sm text-[#173c2e] placeholder:text-[#8ba99a]"
+          disabled={loading}
+          className="bg-[#f8fdf9] border border-[#b8ebce] focus:border-[#6eddb1] focus:ring-2 focus:ring-[#6eddb1]/20 outline-none rounded-xl px-3.5 py-2.5 text-sm text-[#173c2e] placeholder:text-[#8ba99a] disabled:opacity-50"
         />
 
         <input
@@ -29,7 +32,8 @@ export default function AddLinkForm({
           placeholder="URL (As-is user entered)"
           value={form.url}
           onChange={(e) => setForm({ ...form, url: e.target.value })}
-          className="bg-[#f8fdf9] border border-[#b8ebce] focus:border-[#6eddb1] focus:ring-2 focus:ring-[#6eddb1]/20 outline-none rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#173c2e] placeholder:text-[#8ba99a]"
+          disabled={loading}
+          className="bg-[#f8fdf9] border border-[#b8ebce] focus:border-[#6eddb1] focus:ring-2 focus:ring-[#6eddb1]/20 outline-none rounded-xl px-3.5 py-2.5 text-sm font-mono text-[#173c2e] placeholder:text-[#8ba99a] disabled:opacity-50"
         />
 
         <textarea
@@ -37,7 +41,8 @@ export default function AddLinkForm({
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           rows={2}
-          className="bg-[#f8fdf9] border border-[#b8ebce] focus:border-[#6eddb1] focus:ring-2 focus:ring-[#6eddb1]/20 outline-none rounded-xl px-3.5 py-2.5 text-sm text-[#173c2e] placeholder:text-[#8ba99a] resize-none"
+          disabled={loading}
+          className="bg-[#f8fdf9] border border-[#b8ebce] focus:border-[#6eddb1] focus:ring-2 focus:ring-[#6eddb1]/20 outline-none rounded-xl px-3.5 py-2.5 text-sm text-[#173c2e] placeholder:text-[#8ba99a] resize-none disabled:opacity-50"
         />
 
         <div className="flex flex-wrap gap-2 pt-1">
@@ -45,6 +50,7 @@ export default function AddLinkForm({
             <button
               key={c.id}
               type="button"
+              disabled={loading}
               onClick={() => setForm({ ...form, category: c.id })}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
                 form.category === c.id
@@ -65,9 +71,19 @@ export default function AddLinkForm({
 
         <button
           type="submit"
-          className="mt-2 bg-[#238b63] hover:bg-[#145c43] active:scale-[0.98] transition-all text-white text-sm font-medium py-2.5 rounded-xl shadow-md cursor-pointer"
+          disabled={loading}
+          className="mt-2 bg-[#238b63] hover:bg-[#145c43] active:scale-[0.98] transition-all text-white text-sm font-medium py-2.5 rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
         >
-          Save to Vault
+          {loading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              {isEditing ? "Updating..." : "Saving to Vault..."}
+            </>
+          ) : isEditing ? (
+            "Update Link"
+          ) : (
+            "Save to Vault"
+          )}
         </button>
       </form>
     </div>

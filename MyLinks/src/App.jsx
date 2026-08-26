@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, X, Calendar, Home, Bookmark } from "lucide-react";
+import { Search, X, Calendar, Home } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteUser, setUser, togglePin, updateItem } from "./store/slice";
 import {
@@ -74,6 +74,7 @@ export default function App() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state for save/update
 
   const [form, setForm] = useState({
     title: "",
@@ -145,7 +146,7 @@ export default function App() {
     setIsEditing(false);
     setEditingId(null);
     setForm({ title: "", url: "", description: "", category: "dev" });
-    setShowForm(true);
+    setShowForm(!showForm);
   };
 
   async function addLink(e) {
@@ -154,6 +155,9 @@ export default function App() {
       setError("Please add a title.");
       return;
     }
+
+    setIsSubmitting(true);
+    setError("");
 
     try {
       if (isEditing) {
@@ -168,10 +172,11 @@ export default function App() {
       setIsEditing(false);
       setEditingId(null);
       setForm({ title: "", url: "", description: "", category: "dev" });
-      setError("");
     } catch (err) {
       setError("Kuch galat ho gaya, dubara try karo.");
       console.log(err);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -236,6 +241,7 @@ export default function App() {
           timeStr={timeStr}
           showForm={showForm}
           setShowForm={handleAddNewClick}
+          now={now} // <-- Pass kiya gaya taaki header mein aaj ka din/date show ho sake
         />
 
         {/* --- Navigation Tabs (Home vs All Day-wise) --- */}
@@ -273,6 +279,7 @@ export default function App() {
             categories={CATEGORIES}
             setShowForm={setShowForm}
             isEditing={isEditing}
+            loading={isSubmitting} // <-- Loading prop pass kiya gaya
           />
         )}
 
